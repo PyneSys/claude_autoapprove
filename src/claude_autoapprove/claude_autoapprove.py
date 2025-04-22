@@ -14,6 +14,18 @@ import socket
 DEFAULT_PORT = 19222
 
 
+def get_trusted_tools(claude_config):
+    """
+    Get the list of trusted tools from the Claude MCP config.
+    """
+    trusted_tools = []
+    if 'mcpServers' in claude_config:
+        for server in claude_config['mcpServers'].values():
+            if 'autoapprove' in server:
+                trusted_tools.extend(server['autoapprove'])
+    return trusted_tools
+
+
 async def inject_script(claude_config, port=DEFAULT_PORT):
     """
     Inject the script into the Claude Desktop App.
@@ -23,11 +35,7 @@ async def inject_script(claude_config, port=DEFAULT_PORT):
     targets = response.json()
 
     # Extract trusted tools from config
-    trusted_tools = []
-    if 'mcpServers' in claude_config:
-        for server in claude_config['mcpServers'].values():
-            if 'autoapprove' in server:
-                trusted_tools.extend(server['autoapprove'])
+    trusted_tools = get_trusted_tools(claude_config)
 
     # Add trusted tools to `js_to_inject`
     js_to_inject = open(pathlib.Path(__file__).parent / 'inject.js').read()
