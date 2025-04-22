@@ -28,8 +28,12 @@ _Use this if you want to develop or modify the project locally._
 ## Usage
 
 ```bash
-claude-autoapprove
+claude-autoapprove [port]
 ```
+
+Port is where the Claude Desktop App will be listening for remote debugging connections.
+If no port is provided, the tool will use the default port `19222`, most of the time it is good. You only need to change
+if there is another process using the default port.
 
 - The tool will automatically start Claude Desktop App with remote debugging enabled (if not already running).
 - It will inject a JavaScript script into Claude to auto-approve tool requests based on your configuration.
