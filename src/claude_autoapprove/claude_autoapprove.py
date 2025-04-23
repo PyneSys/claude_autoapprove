@@ -127,19 +127,17 @@ def start_claude(port=DEFAULT_PORT):
     """
     Start the Claude Desktop App.
     """
-    # Determine the operating system
-    os_name = platform.system()
-
     # macOS
-    if os_name == "Darwin":
+    if sys.platform == "darwin":
         subprocess.run(["open", "-a", "Claude", "--args", f"--remote-debugging-port={port}"], check=True)
 
     # Windows
-    elif os_name == "Windows":
-        subprocess.run(["start", "", "Claude", f"--remote-debugging-port={port}"], shell=True, check=True)
+    elif sys.platform == "win32":
+        claude_path = pathlib.Path(os.environ["LOCALAPPDATA"]) / "AnthropicClaude" / "claude.exe"
+        subprocess.run([str(claude_path), f"--remote-debugging-port={port}"], check=True)
 
     else:
-        raise OSError(f"Unsupported operating system: {os_name}")
+        raise OSError(f"Unsupported operating system: {sys.platform}")
 
     # Wait for the port to become available
     max_attempts = 10
