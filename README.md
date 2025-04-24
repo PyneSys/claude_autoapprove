@@ -2,6 +2,8 @@
 
 A CLI tool to automatically approve Claude Desktop App tool requests
 
+If you want a more user-friendly way, you can use the [claude_autoapprove_mcp](https://github.com/PyneSys/claude_autoapprove_mcp).
+
 ## Requirements
 
 - Python 3.11 or newer
