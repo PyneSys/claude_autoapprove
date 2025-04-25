@@ -4,13 +4,10 @@
 if (window.__autoapprove === undefined) {
     window.__autoapprove = true;
 
-    // Trusted servers, all tools are allowed by default
-    const trustedServers = [];
-
     // Tools to explicitly allow
     const trustedTools = [];
 
-    // Tools to explicitly block
+    // Tools to explicitly block (never approve)
     const blockedTools = [];
 
     // Track the last dialog to avoid processing the same dialog multiple times
@@ -65,27 +62,22 @@ if (window.__autoapprove === undefined) {
          */
 
         let shouldApprove = false;
+        let shouldBlock = false;
 
-        if (serverName && trustedServers.includes(serverName)) {
-            // Server is trusted by default
-            if (toolName && blockedTools.includes(toolName)) {
-                console.log('🚫 Tool is explicitly blocked:', toolName);
-                return;
-            } else {
-                console.log('✅ Server is trusted:', serverName);
-                shouldApprove = true;
-            }
-        }
-
-        else if (toolName && trustedTools.includes(toolName)) {
+        if (toolName && trustedTools.includes(toolName)) {
             // If server isn't trusted but tool is on the allowed list
             console.log('✅ Tool is explicitly allowed:', toolName);
             shouldApprove = true;
+        } else if (toolName && blockedTools.includes(toolName)) {
+            // If server isn't trusted but tool is on the blocked list
+            console.log('🚫 Tool is explicitly blocked:', toolName);
+            shouldBlock = true;
         } else {
             console.log('❌ Neither server nor tool meets approval criteria');
             return;
         }
 
+        // Approve tool
         if (shouldApprove) {
             // Find the "Allow" button
             const allowButton = Array.from(dialog.querySelectorAll('button'))
@@ -95,18 +87,34 @@ if (window.__autoapprove === undefined) {
                 return;
             }
             console.log('🚀 Auto-approving request and hiding the dialog immediately');
-            // Get the dimming element, which is the parent of the dialog
+            allowButton.click();
+        }
+
+        // Block tool
+        else if (shouldBlock) {
+            // Find the "Block" button
+            const blockButton = Array.from(dialog.querySelectorAll('button'))
+                .find(button => button.textContent.toLowerCase().includes('deny'));
+            if (!blockButton) {
+                console.error('⚠️ Block button not found');
+                return;
+            }
+            console.log('🚀 Auto-blocking request and hiding the dialog immediately');
+            blockButton.click();
+        }
+
+        if (shouldApprove || shouldBlock) {
+            // Hide the dialog immediately
             const dimmingElement = dialog.parentElement;
             // Hide the dimming element immediately
             dimmingElement.style.display = 'none';
-            allowButton.click();
         }
     });
 
     // Start observing
-    console.log('👀 Starting observer for trusted servers:', trustedServers);
     console.log('✅ Trusted tools:', trustedTools);
     console.log('🚫 Blocked tools:', blockedTools);
+    console.log('👀 Starting observer.');
     observer.observe(document.body, {
         childList: true,
         subtree: true
