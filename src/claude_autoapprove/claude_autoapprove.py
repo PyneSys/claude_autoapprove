@@ -1,6 +1,6 @@
 import sys
 import os
-
+import argparse
 import pathlib
 import requests
 import websockets
@@ -41,6 +41,9 @@ def get_blocked_tools(claude_config):
 async def inject_script(claude_config, port=DEFAULT_PORT):
     """
     Inject the script into the Claude Desktop App.
+
+    This uses a single, simple approach: inject the script directly
+    without specifying a context ID, which will use the default context.
     """
     # Get active targets (windows, tabs)
     response = requests.get(f'http://localhost:{port}/json')
@@ -56,30 +59,41 @@ async def inject_script(claude_config, port=DEFAULT_PORT):
         f'const blockedTools = {json.dumps(get_blocked_tools(claude_config))};'
     )
 
-    # Optionally target a specific tab (e.g., based on URL)
+    # Find the Claude tab
     target = next(t for t in targets if 'url' in t and 'claude' in t['url'].lower())
-
     ws_url = target['webSocketDebuggerUrl']
+
     max_attempts = 10
     for attempt in range(max_attempts):
         try:
             async with websockets.connect(ws_url) as ws:
-                # Execute JS code
+                # Execute JS code in the default context (no contextId specified)
+                print(f'Attempt {attempt + 1}: Injecting script in default context')
+
                 await ws.send(json.dumps({
                     'id': 1,
                     'method': 'Runtime.evaluate',
                     'params': {
                         'expression': js_with_tools,
-                        'contextId': 1,
                         'replMode': True
                     }
                 }))
+
                 result = await ws.recv()
-                if result == '{"id":1,"result":{"result":{"type":"boolean","value":true}}}':
+                result_data = json.loads(result)
+
+                if 'result' in result_data and 'result' in result_data['result'] and result_data['result']['result'].get('value') is True:
                     print('Successfully injected autoapprove script.')
                     return
                 else:
                     print(f'Attempt {attempt + 1}: Unexpected result:', result)
+                    # Parse the result to provide better error info
+                    try:
+                        result_obj = json.loads(result)
+                        if 'error' in result_obj:
+                            print(f'Error details: {result_obj["error"]}')
+                    except:
+                        pass
         except Exception as e:
             print(f'Attempt {attempt + 1} failed:', e)
         if attempt < max_attempts - 1:
@@ -184,6 +198,11 @@ def main():
     """
     Entry point for the claude-autoapprove CLI.
     """
+    parser = argparse.ArgumentParser(description="Claude Auto-Approve tools")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Debugger port for Claude Desktop")
+
+    args = parser.parse_args()
+
     try:
         asyncio.run(async_main())
     except Exception as e:

@@ -8,3 +8,6 @@ build/
 .DS_Store
 # Windows
 Thumbs.db
+
+# Project Memory
+MEMORY.md
