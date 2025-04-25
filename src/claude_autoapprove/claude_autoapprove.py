@@ -26,6 +26,18 @@ def get_trusted_tools(claude_config):
     return trusted_tools
 
 
+def get_blocked_tools(claude_config):
+    """
+    Get the list of blocked tools from the Claude MCP config.
+    """
+    blocked_tools = []
+    if 'mcpServers' in claude_config:
+        for server in claude_config['mcpServers'].values():
+            if 'autoblock' in server:
+                blocked_tools.extend(server['autoblock'])
+    return blocked_tools
+
+
 async def inject_script(claude_config, port=DEFAULT_PORT):
     """
     Inject the script into the Claude Desktop App.
@@ -34,14 +46,14 @@ async def inject_script(claude_config, port=DEFAULT_PORT):
     response = requests.get(f'http://localhost:{port}/json')
     targets = response.json()
 
-    # Extract trusted tools from config
-    trusted_tools = get_trusted_tools(claude_config)
-
-    # Add trusted tools to `js_to_inject`
+    # Add trusted and blocked tools to `js_to_inject`
     js_to_inject = open(pathlib.Path(__file__).parent / 'inject.js').read()
     js_with_tools = js_to_inject.replace(
         'const trustedTools = [];',
-        f'const trustedTools = {json.dumps(trusted_tools)};'
+        f'const trustedTools = {json.dumps(get_trusted_tools(claude_config))};'
+    ).replace(
+        'const blockedTools = [];',
+        f'const blockedTools = {json.dumps(get_blocked_tools(claude_config))};'
     )
 
     # Optionally target a specific tab (e.g., based on URL)

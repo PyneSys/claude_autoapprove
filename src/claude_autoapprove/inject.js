@@ -1,4 +1,5 @@
-// This code based on https://gist.github.com/Richard-Weiss/95f8bf90b55a3a41b4ae0ddd7a614942
+// This code based on https://gist.github.com/Richard-Weiss/95f8bf90b55a3a41b4ae0ddd7a614942,
+// but improved a lot
 
 if (window.__autoapprove === undefined) {
     window.__autoapprove = true;
@@ -12,57 +13,27 @@ if (window.__autoapprove === undefined) {
     // Tools to explicitly block
     const blockedTools = [];
 
-    // Cooldown tracking
-    let lastClickTime = 0;
-    const COOLDOWN_MS = 1000; // 1 second cooldown
+    // Track the last dialog to avoid processing the same dialog multiple times
+    let lastDialog = null;
 
-    // Log throttling
-    const logHistory = {};
-    const LOG_THROTTLE_MS = 5000; // Only log the same message every 5 seconds
-
-    // Smart logging with throttling
-    function throttledLog(level, message, ...args) {
-        const key = message + JSON.stringify(args);
-        const now = Date.now();
-
-        // If we've logged this exact message recently, skip it
-        if (logHistory[key] && now - logHistory[key] < LOG_THROTTLE_MS) {
-            return;
-        }
-
-        // Update the log history
-        logHistory[key] = now;
-
-        // Output the log
-        console[level](message, ...args);
-    }
-
-    const log = {
-        debug: (message, ...args) => throttledLog('debug', message, ...args),
-        log: (message, ...args) => throttledLog('log', message, ...args),
-        error: (message, ...args) => throttledLog('error', message, ...args)
-    };
+    /**
+     * Mutation observer
+     */
 
     const observer = new MutationObserver((mutations) => {
-        // Check if we're still in cooldown
-        const now = Date.now();
-        if (now - lastClickTime < COOLDOWN_MS) {
-            log.debug('🕒 Still in cooldown period, skipping...');
-            return;
-        }
-
-        log.debug('🔍 Checking mutations...');
+        console.debug('🔍 Checking mutations...');
 
         const dialog = document.querySelector('[role="dialog"]');
-        if (!dialog) return;
+        if (!dialog || dialog === lastDialog) return;
+        lastDialog = dialog;
 
         // Try to extract tool name
         const buttonWithDiv = dialog.querySelector('button div');
         let toolName = null;
         if (buttonWithDiv && buttonWithDiv.textContent) {
-            log.debug('📝 Found tool request:', buttonWithDiv.textContent);
+            console.debug('📝 Found tool request:', buttonWithDiv.textContent);
             toolName = buttonWithDiv.textContent.match(/Run (\S+) from/)?.[1];
-            if (toolName) log.log('🛠️ Tool name:', toolName);
+            if (toolName) console.log('🛠️ Tool name:', toolName);
         }
 
         // Try to extract server name
@@ -77,50 +48,58 @@ if (window.__autoapprove === undefined) {
                     const serverMatch = serverDiv.textContent.match(/Allow tool from [“|"]([^[”|"]+)[”|"]/);
 
                     serverName = serverMatch?.[1];
-                    log.debug('🌐 Extracted server name:', serverName);
+                    console.debug('🌐 Extracted server name:', serverName);
                 }
             } else {
-                log.error('⚠️ Server name could not be extracted.');
+                return;
             }
         } else {
-            log.error('⚠️ Server name could not be extracted.');
+            return;
         }
 
         // If neither was found, exit
         if (!toolName && !serverName) return;
 
-        // Decision logic - prioritizing server access with tool constraints
+        /**
+         * Decision logic
+         */
+
         let shouldApprove = false;
 
         if (serverName && trustedServers.includes(serverName)) {
             // Server is trusted by default
             if (toolName && blockedTools.includes(toolName)) {
-                log.log('🚫 Tool is explicitly blocked:', toolName);
-                shouldApprove = false;
+                console.log('🚫 Tool is explicitly blocked:', toolName);
+                return;
             } else {
-                log.log('✅ Server is trusted:', serverName);
+                console.log('✅ Server is trusted:', serverName);
                 shouldApprove = true;
             }
         }
 
         else if (toolName && trustedTools.includes(toolName)) {
             // If server isn't trusted but tool is on the allowed list
-            log.log('✅ Tool is explicitly allowed:', toolName);
+            console.log('✅ Tool is explicitly allowed:', toolName);
             shouldApprove = true;
         } else {
-            log.log('❌ Neither server nor tool meets approval criteria');
-            shouldApprove = false;
+            console.log('❌ Neither server nor tool meets approval criteria');
+            return;
         }
 
         if (shouldApprove) {
+            // Find the "Allow" button
             const allowButton = Array.from(dialog.querySelectorAll('button'))
                 .find(button => button.textContent.toLowerCase().includes('allow for this chat'));
-
-            if (allowButton) {
-                log.log('🚀 Auto-approving request');
-                lastClickTime = now; // Set cooldown
-                allowButton.click();
+            if (!allowButton) {
+                console.error('⚠️ Allow button not found');
+                return;
             }
+            console.log('🚀 Auto-approving request and hiding the dialog immediately');
+            // Get the dimming element, which is the parent of the dialog
+            const dimmingElement = dialog.parentElement;
+            // Hide the dimming element immediately
+            dimmingElement.style.display = 'none';
+            allowButton.click();
         }
     });
 
@@ -132,6 +111,37 @@ if (window.__autoapprove === undefined) {
         childList: true,
         subtree: true
     });
+
+    /**
+     * Beautyful banner
+     */
+
+    const banner = document.createElement('div');
+    banner.style.position = 'fixed';
+    banner.style.top = '10px';
+    banner.style.right = '10px';
+    banner.style.backgroundColor = '#CA6443';
+    banner.style.color = 'white';
+    banner.style.padding = '10px';
+    banner.style.zIndex = '9999';
+    banner.style.fontFamily = 'Arial, sans-serif';
+    banner.style.fontSize = '15px';
+    banner.style.borderRadius = '8px';
+    banner.style.cursor = 'pointer';
+    banner.innerHTML = '<b>Claude Auto-Approve active.</b><br/> A local debug port is open for internal communication.<br/>It is accessible only from your device.<br/>Normal usage is safe, but debug ports can pose minor risks if misused.';
+
+    document.body.appendChild(banner);
+
+    function removeBanner() {
+        banner.style.transition = 'opacity 0.8s';
+        banner.style.opacity = '0';
+        setTimeout(() => {
+            banner.remove();
+        }, 800);
+    }
+
+    setTimeout(removeBanner, 20000);
+    banner.addEventListener('click', removeBanner);
 }
 
 // Return to REPL

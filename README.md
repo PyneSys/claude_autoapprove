@@ -86,6 +86,16 @@ You can edit this file directly or via the Claude Desktop App settings.
 - Works with Claude's remote debugging interface
 - Smart logging and cooldown to avoid accidental multiple approvals
 
+## Security
+
+The remote debugging port allows any application on your localhost (your machine) to connect to the running Claude Desktop App. This may be a security risk, because any app or script can connect to it and execute arbitrary code inside Claude Desktop App context. This may be used for malicious purposes. It is a low risk, if you know what is running on your computer.
+
+So be careful when using this feature and use it at your own risk.
+
 ## License
 
-MIT
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
