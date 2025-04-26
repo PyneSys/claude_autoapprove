@@ -18,44 +18,29 @@ if (window.__autoapprove === undefined) {
      */
 
     const observer = new MutationObserver((mutations) => {
-        console.debug('🔍 Checking mutations...');
-
-        const dialog = document.querySelector('[role="dialog"]');
+        const dialog = document.querySelector('[role="dialog"][data-state="open"]');
         if (!dialog || dialog === lastDialog) return;
         lastDialog = dialog;
 
+        // Try to extract server name
+        const serverNameElement = dialog.querySelector('button div span.font-medium');
+        let serverName = null;
+        if (serverNameElement && serverNameElement.textContent) {
+            serverName = serverNameElement.textContent
+            if (serverName) console.log('🌐 Server name:', serverName);
+        }
+
+        if (!serverName) return;
+
         // Try to extract tool name
-        const buttonWithDiv = dialog.querySelector('button div');
+        const toolNameElement = dialog.querySelector('button div div.text-sm');
         let toolName = null;
-        if (buttonWithDiv && buttonWithDiv.textContent) {
-            console.debug('📝 Found tool request:', buttonWithDiv.textContent);
-            toolName = buttonWithDiv.textContent.match(/Run (\S+) from/)?.[1];
+        if (toolNameElement && toolNameElement.textContent) {
+            toolName = toolNameElement.textContent
             if (toolName) console.log('🛠️ Tool name:', toolName);
         }
 
-        // Try to extract server name
-        const h2Element = dialog.querySelector('h2');
-        let serverName = null;
-
-        if (h2Element) {
-            const serverDiv = h2Element.querySelector('div');
-            if (serverDiv) {
-                if (serverDiv.textContent) {
-                    // The format is "Allow tool from "file-system-windows-python" (local)?"
-                    const serverMatch = serverDiv.textContent.match(/Allow tool from [“|"]([^[”|"]+)[”|"]/);
-
-                    serverName = serverMatch?.[1];
-                    console.debug('🌐 Extracted server name:', serverName);
-                }
-            } else {
-                return;
-            }
-        } else {
-            return;
-        }
-
-        // If neither was found, exit
-        if (!toolName && !serverName) return;
+        if (!toolName) return;
 
         /**
          * Decision logic
@@ -94,7 +79,7 @@ if (window.__autoapprove === undefined) {
         else if (shouldBlock) {
             // Find the "Block" button
             const blockButton = Array.from(dialog.querySelectorAll('button'))
-                .find(button => button.textContent.toLowerCase().includes('deny'));
+                .find(button => button.textContent.toLowerCase().includes('decline'));
             if (!blockButton) {
                 console.error('⚠️ Block button not found');
                 return;

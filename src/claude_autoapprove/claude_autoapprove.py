@@ -50,7 +50,7 @@ async def inject_script(claude_config, port=DEFAULT_PORT):
     targets = response.json()
 
     # Add trusted and blocked tools to `js_to_inject`
-    js_to_inject = open(pathlib.Path(__file__).parent / 'inject.js').read()
+    js_to_inject = open(pathlib.Path(__file__).parent / 'inject.js', 'r', encoding='utf-8').read()
     js_with_tools = js_to_inject.replace(
         'const trustedTools = [];',
         f'const trustedTools = {json.dumps(get_trusted_tools(claude_config))};'
