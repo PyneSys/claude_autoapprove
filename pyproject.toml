@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-autoapprove"
-version = "0.2.3"
+version = "0.2.4"
 description = "A CLI tool to run Claude Desktop App and inject a hack to enable auto approve feature"
 authors = [{ name = "PYNESYS LLC" }]
 readme = "README.md"

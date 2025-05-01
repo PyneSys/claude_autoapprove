@@ -66,7 +66,9 @@ if (window.__autoapprove === undefined) {
         if (shouldApprove) {
             // Find the "Allow" button
             const allowButton = Array.from(dialog.querySelectorAll('button'))
-                .find(button => button.textContent.toLowerCase().includes('allow for this chat'));
+                .find(button =>
+                    button.textContent.toLowerCase().includes('allow for this chat') ||
+                    button.textContent.toLowerCase().includes('allow once'));
             if (!allowButton) {
                 console.error('⚠️ Allow button not found');
                 return;
@@ -79,7 +81,8 @@ if (window.__autoapprove === undefined) {
         else if (shouldBlock) {
             // Find the "Block" button
             const blockButton = Array.from(dialog.querySelectorAll('button'))
-                .find(button => button.textContent.toLowerCase().includes('decline'));
+                .find(button => button.textContent.toLowerCase().includes('decline') ||
+                    button.textContent.toLowerCase().includes('deny'));
             if (!blockButton) {
                 console.error('⚠️ Block button not found');
                 return;
