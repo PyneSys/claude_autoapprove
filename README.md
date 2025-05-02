@@ -1,5 +1,18 @@
 # claude-autoapprove
 
+> **Warning**
+> The May 1st update introduced an "Always approve" button - **do not use this** as it cannot be undone!
+> `claude-autoapprove` restores the safer "Allow for this chat" functionality:
+> - Configure permanent approvals in config
+> - Make per-chat decisions for other tools
+> - Change decisions in newer chats
+> This provides granular control while maintaining security.
+>
+> If you by mistake used the "Always approve" button, as a workaround you can rename the mcp in the `claude_desktop_config.json` file to something else. Example: `git->git_new`.
+> If Anthropic fixes this bug in the future, we may not need `claude-autoapprove` anymore.
+
+
+
 A CLI tool to automatically approve Claude Desktop App tool requests
 
 If you want a more user-friendly way, you can use the [claude_autoapprove_mcp](https://github.com/PyneSys/claude_autoapprove_mcp).

@@ -42,12 +42,69 @@ if (window.__autoapprove === undefined) {
 
         if (!toolName) return;
 
+        let shouldApprove = false;
+        let shouldBlock = false;
+
+        /**
+         * Bring back the allow for this chat button
+         */
+
+        // Get url of the current page
+        const chat_url = window.location.href;
+
+        // If the window.last_chat_url is the same as the current url
+        if (!window.last_chat_url || window.last_chat_url !== chat_url) {
+            console.log('🔄 Resetting allowed tools for this chat');
+            // Update the window.last_chat_url
+            window.last_chat_url = chat_url;
+            window.allowed_tools_per_chat = {};
+        }
+
+        // Find allow always button
+        const allowAlwaysButton = Array.from(dialog.querySelectorAll('button')).find(button =>
+            button.textContent.toLowerCase().includes('allow always'));
+        if (allowAlwaysButton) {
+            console.log('🔄 Allow always button found. The allowed tools for this chat are:', window.allowed_tools_per_chat);
+
+            // Approve if the tool is in the allowed_tools_per_chat
+            if (window.allowed_tools_per_chat[toolName]) {
+                shouldApprove = true;
+            }
+            // Otherwise modify the allow always button to allow for this chat
+            else {
+                // Create a DOM copy of the allow always button with the text "Allow for this chat"
+                const allowForThisChatButton = allowAlwaysButton.cloneNode(true);
+                allowForThisChatButton.textContent = 'Allow for this chat';
+                allowAlwaysButton.parentNode.replaceChild(allowForThisChatButton, allowAlwaysButton);
+
+                // Hide the allow always button
+                allowAlwaysButton.style.display = 'none';
+
+                // Add a click listener to the allow for this chat button
+                allowForThisChatButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    // Find the "Allow" button
+                    const allowButton = Array.from(dialog.querySelectorAll('button'))
+                        .find(button => button.textContent.toLowerCase().includes('allow once'));
+                    if (!allowButton) {
+                        console.error('⚠️ Allow button not found');
+                        return;
+                    }
+
+                    // Add the tool name to the window.allowed_tools_per_chat
+                    window.allowed_tools_per_chat[toolName] = true;
+
+                    // Just click the allow button
+                    allowButton.click();
+                });
+            }
+        }
+
         /**
          * Decision logic
          */
-
-        let shouldApprove = false;
-        let shouldBlock = false;
 
         if (toolName && trustedTools.includes(toolName)) {
             // If server isn't trusted but tool is on the allowed list
@@ -57,7 +114,7 @@ if (window.__autoapprove === undefined) {
             // If server isn't trusted but tool is on the blocked list
             console.log('🚫 Tool is explicitly blocked:', toolName);
             shouldBlock = true;
-        } else {
+        } else if (!shouldApprove && !shouldBlock) {
             console.log('❌ Neither server nor tool meets approval criteria');
             return;
         }
@@ -129,14 +186,14 @@ if (window.__autoapprove === undefined) {
     document.body.appendChild(banner);
 
     function removeBanner() {
-        banner.style.transition = 'opacity 0.8s';
+        banner.style.transition = 'opacity 0.5s';
         banner.style.opacity = '0';
         setTimeout(() => {
             banner.remove();
-        }, 800);
+        }, 500);
     }
 
-    setTimeout(removeBanner, 20000);
+    setTimeout(removeBanner, 15000);
     banner.addEventListener('click', removeBanner);
 }
 
